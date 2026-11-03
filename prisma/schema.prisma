@@ -1,0 +1,213 @@
+// Prisma schema for Stargate Web CMS
+// PT Stargate Pasific Resource
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum CategoryType {
+  PPM
+  CSR
+}
+
+enum GalleryType {
+  PENGHARGAAN
+}
+
+enum HeroSlot {
+  HOME_HERO
+  HOME_SAMBUTAN
+  PPM_BANNER
+  CSR_BANNER
+  BINAAN_BANNER
+  PENGHARGAAN_BANNER
+  GALERI_KEGIATAN_BANNER
+  HOME_COLLAGE_2
+  HOME_COLLAGE_3
+  HOME_BINAAN_PANEL
+  HOME_FAQ
+  HOME_CTA_CSR
+  HOME_CTA_PPM
+  HOME_CTA_BINAAN
+}
+
+// ---------------------------------------------------------------------------
+// A. Beranda — Testimonial Slider
+// ---------------------------------------------------------------------------
+
+model Testimonial {
+  id          Int      @id @default(autoincrement())
+  name        String
+  title       String
+  quote       String   @db.Text
+  imageUrl    String
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  // Homepage: where isPublished order by createdAt desc
+  @@index([isPublished, createdAt])
+  @@map("testimonials")
+}
+
+// ---------------------------------------------------------------------------
+// C. PPM & CSR — Blog / News
+// ---------------------------------------------------------------------------
+
+model Category {
+  id    Int          @id @default(autoincrement())
+  name  String
+  type  CategoryType
+  order Int          @default(0)
+  posts Post[]
+
+  @@unique([name, type])
+  @@index([type, order])
+  @@map("categories")
+}
+
+model Post {
+  id           Int       @id @default(autoincrement())
+  title        String
+  slug         String    @unique
+  content      String    @db.Text
+  thumbnailUrl String
+  categoryId   Int
+  category     Category  @relation(fields: [categoryId], references: [id])
+  viewCount    Int       @default(0)
+  publishedAt  DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([categoryId])
+  @@index([publishedAt])
+  // getPostsByType filters by category then sorts publishedAt desc; the
+  // single-column indexes left MySQL to filesort.
+  @@index([categoryId, publishedAt])
+  // NOTE: @@index([viewCount]) was dropped — nothing filters or sorts by it,
+  // but it cost a B-tree write on every article view.
+  @@map("posts")
+}
+
+// ---------------------------------------------------------------------------
+// D. Binaan / Katalog UMKM
+// ---------------------------------------------------------------------------
+
+model BinaanGroup {
+  id       Int       @id @default(autoincrement())
+  name     String
+  products Product[]
+
+  @@map("binaan_groups")
+}
+
+model Product {
+  id          Int         @id @default(autoincrement())
+  name        String
+  groupId     Int
+  group       BinaanGroup @relation(fields: [groupId], references: [id])
+  flavor      String?
+  description String      @db.Text
+  imageUrl    String
+  waNumber    String
+
+  @@index([groupId])
+  @@map("products")
+}
+
+// ---------------------------------------------------------------------------
+// E. Penghargaan — Galeri
+// ---------------------------------------------------------------------------
+
+model Gallery {
+  id       Int         @id @default(autoincrement())
+  title    String
+  type     GalleryType
+  period   String?
+  imageUrl String
+
+  @@index([type])
+  @@map("galleries")
+}
+
+// ---------------------------------------------------------------------------
+// F. Galeri Kegiatan — per Kategori (Carousel)
+// ---------------------------------------------------------------------------
+
+model ActivityCategory {
+  id     Int             @id @default(autoincrement())
+  name   String          @unique
+  order  Int             @default(0)
+  photos ActivityPhoto[]
+
+  @@index([order])
+  @@map("activity_categories")
+}
+
+model ActivityPhoto {
+  id         Int              @id @default(autoincrement())
+  caption    String?
+  imageUrl   String
+  order      Int              @default(0)
+  categoryId Int
+  category   ActivityCategory @relation(fields: [categoryId], references: [id])
+  createdAt  DateTime         @default(now())
+
+  @@index([categoryId])
+  // The real query is "photos of one category, ordered by order" — a separate
+  // index on `order` alone could not serve it.
+  @@index([categoryId, order])
+  @@map("activity_photos")
+}
+
+// ---------------------------------------------------------------------------
+// G. Hero / Banner Images — dikelola dari /admin/hero-images
+// ---------------------------------------------------------------------------
+
+model HeroImage {
+  id        Int      @id @default(autoincrement())
+  slot      HeroSlot @unique
+  imageUrl  String
+  updatedAt DateTime @updatedAt
+
+  @@map("hero_images")
+}
+
+// ---------------------------------------------------------------------------
+// H. Sambutan — teks kutipan & deskripsi di Beranda, dikelola dari /admin/sambutan
+// ---------------------------------------------------------------------------
+
+model Sambutan {
+  id          Int      @id
+  quote       String   @db.Text
+  description String   @db.Text
+  updatedAt   DateTime @updatedAt
+
+  @@map("sambutan")
+}
+
+// ---------------------------------------------------------------------------
+// I. Footer — kontak & sosial media, dikelola dari /admin/footer
+// ---------------------------------------------------------------------------
+
+model FooterSettings {
+  id           Int      @id
+  description  String   @db.Text
+  address      String   @db.Text
+  phone        String
+  email        String
+  facebookUrl  String
+  instagramUrl String
+  youtubeUrl   String
+  updatedAt    DateTime @updatedAt
+
+  @@map("footer_settings")
+}

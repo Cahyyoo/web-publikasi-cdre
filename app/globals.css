@@ -1,0 +1,311 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Brand palette as RGB channels (see tailwind.config.ts). Default: forest
+ * green on cream. `--brand-light` is pale on purpose: it is used as text and
+ * icons on dark backgrounds (hero eyebrow, footer), not on cream.
+ * `--cream` is the public site's page background, `--cream-dark` its cards.
+ */
+:root {
+  --brand: 31 90 54; /* #1F5A36 */
+  --brand-dark: 14 46 29; /* #0E2E1D */
+  --brand-light: 169 205 180; /* #A9CDB4 */
+  --brand-accent: 47 122 75; /* #2F7A4B */
+  --cream: 248 244 236; /* #F8F4EC */
+  --cream-dark: 240 234 223; /* #F0EADF */
+}
+
+/* Previous blue palette, kept for previews via <html data-theme="biru">. */
+[data-theme="biru"] {
+  --brand: 21 145 220; /* #1591DC */
+  --brand-dark: 14 108 166; /* #0E6CA6 */
+  --brand-light: 79 172 227; /* #4FACE3 */
+  --brand-accent: 14 165 233; /* #0EA5E9 */
+}
+
+[data-theme="oranye"] {
+  --brand: 221 107 18; /* #DD6B12 */
+  --brand-dark: 180 83 12; /* #B4530C */
+  --brand-light: 245 158 75; /* #F59E4B */
+  --brand-accent: 249 115 22; /* #F97316 */
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: #1e293b;
+}
+
+/*
+ * Scroll reveal (driven by components/ui/ScrollReveal.tsx). Elements are only
+ * hidden once that component has added `reveal-ready` to <html>, so without
+ * JavaScript everything stays visible. Stagger with `--reveal-delay`.
+ *
+ * This is an animation with `backwards` fill rather than a transition, so it
+ * leaves nothing behind once it ends: the element's own hover transitions
+ * (e.g. PostCard's lift) keep their own timing.
+ */
+html.reveal-ready [data-reveal]:not(.is-revealed) {
+  opacity: 0;
+}
+
+[data-reveal].reveal-animate {
+  animation: reveal-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+
+[data-reveal="left"].reveal-animate {
+  animation-name: reveal-left;
+}
+
+[data-reveal="right"].reveal-animate {
+  animation-name: reveal-right;
+}
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+@keyframes reveal-left {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+}
+
+@keyframes reveal-right {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+
+/*
+ * Word-by-word heading reveal (components/ui/RevealText.tsx). The heading
+ * itself stays visible; each `.rt-word` rises in, staggered by its `--i`.
+ */
+html.reveal-ready [data-reveal="text"]:not(.is-revealed) {
+  opacity: 1;
+}
+
+html.reveal-ready [data-reveal="text"]:not(.is-revealed) .rt-word {
+  opacity: 0;
+}
+
+.rt-word {
+  display: inline-block;
+  transform-origin: left bottom;
+}
+
+[data-reveal="text"].reveal-animate {
+  animation: none;
+}
+
+[data-reveal="text"].reveal-animate .rt-word {
+  animation: reveal-word 0.8s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(var(--reveal-delay, 0ms) + var(--i, 0) * 45ms);
+}
+
+@keyframes reveal-word {
+  from {
+    opacity: 0;
+    transform: translateY(0.45em) rotate(4deg);
+  }
+}
+
+/*
+ * Mission paragraph that "fills in" as it scrolls through the viewport.
+ * Scroll-driven animations only; elsewhere (e.g. Firefox) the text simply
+ * shows in its final colour.
+ */
+@supports (animation-timeline: view()) {
+  .scroll-fill {
+    background-image: linear-gradient(
+      to right,
+      rgb(var(--brand)) 50%,
+      rgb(var(--brand) / 0.22) 50%
+    );
+    background-size: 200% 100%;
+    background-position: 100% 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: scroll-fill linear both;
+    animation-timeline: view();
+    animation-range: entry 40% cover 55%;
+  }
+
+  @keyframes scroll-fill {
+    to {
+      background-position: 0 0;
+    }
+  }
+}
+
+/*
+ * Photo reveal: the frame fades in while the image inside settles from a
+ * slight zoom. Triggered by ScrollReveal like the other variants;
+ * `[data-reveal-media]` marks the image to settle. Only opacity and
+ * transform animate, so it stays on the compositor.
+ *
+ * Until revealed it is hidden by the shared opacity rule. Avoid hiding it
+ * with clip-path: IntersectionObserver measures the clipped area, so a fully
+ * clipped element never counts as visible and would stay hidden for good.
+ */
+[data-reveal="zoom"].reveal-animate {
+  animation: reveal-fade 0.9s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+
+[data-reveal="zoom"].reveal-animate [data-reveal-media] {
+  animation: reveal-zoom 1.4s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+
+@keyframes reveal-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes reveal-zoom {
+  from {
+    transform: scale(1.08);
+  }
+}
+
+/* Hero scroll cue: a line that drains downwards on a loop. */
+.scroll-cue-line {
+  animation: scroll-cue 2.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  transform-origin: top;
+}
+
+@keyframes scroll-cue {
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+  45% {
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+  55% {
+    transform: scaleY(1);
+    transform-origin: bottom;
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+}
+
+/*
+ * Scroll-linked motion, run by the browser's compositor with no JavaScript.
+ * Browsers without scroll-driven animations (e.g. Firefox) show it static.
+ *  - .hero-parallax / .hero-content: hero photo drifts and zooms, copy lifts
+ *    and fades as the hero scrolls away.
+ *  - .scroll-progress: the bar under the navbar.
+ */
+@supports (animation-timeline: scroll()) {
+  .hero-parallax {
+    animation: hero-parallax linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 100vh;
+  }
+
+  .hero-content {
+    animation: hero-content linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 80vh;
+  }
+
+  .scroll-progress {
+    animation: scroll-progress linear both;
+    animation-timeline: scroll(root);
+  }
+
+  @keyframes hero-parallax {
+    to {
+      transform: translateY(18%) scale(1.08);
+    }
+  }
+
+  @keyframes hero-content {
+    to {
+      opacity: 0;
+      transform: translateY(-12%);
+    }
+  }
+
+  @keyframes scroll-progress {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+}
+
+/*
+ * Cards that tilt towards the pointer. PointerEffects writes --rx/--ry, and
+ * only on devices with a fine pointer; elsewhere these stay 0.
+ */
+[data-tilt] {
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.3s, background-color 0.3s;
+}
+
+[data-tilt].is-tilting {
+  transition-duration: 0.12s, 0.3s, 0.3s;
+}
+
+/* The round label that follows the pointer over [data-cursor] elements. */
+.cursor-badge {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0;
+  scale: 0.4;
+  transition: opacity 0.25s, scale 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cursor-badge.is-visible {
+  opacity: 1;
+  scale: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  html.reveal-ready [data-reveal]:not(.is-revealed),
+  html.reveal-ready [data-reveal="text"]:not(.is-revealed) .rt-word {
+    opacity: 1;
+    transform: none;
+  }
+
+  .hero-parallax,
+  .hero-content,
+  .scroll-cue-line {
+    animation: none;
+  }
+}
