@@ -35,6 +35,15 @@ Portal website & CMS kustom untuk PT Stargate Pasific Resource. Dibangun dengan 
 
 Untuk men-deploy ke server dengan domain publik dan Cloudflare, lihat [docs/DEPLOY.md](docs/DEPLOY.md).
 
+## Testing
+
+```
+npm test            # unit test (Vitest), tanpa server dan database
+npm run test:e2e    # E2E test (Playwright), butuh MySQL, Chrome, dan internet
+```
+
+E2E butuh `E2E_ALLOW_DATABASE=true` di `.env` dan tidak boleh dijalankan di server produksi. Cara lengkapnya ada di [docs/TESTING.md](docs/TESTING.md).
+
 ## Admin CMS (`/admin`)
 
 Panel admin untuk mengelola seluruh konten dinamis tanpa Prisma Studio: Testimoni, Kategori, Artikel PPM/CSR (Post), Kelompok Binaan, Produk, Galeri Penghargaan, Galeri Kegiatan (kategori + foto carousel), dan Gambar Hero/Banner situs publik.

@@ -93,7 +93,7 @@ export type FlashCode = keyof typeof FLASH;
 
 /** Narrows an untrusted query-string value to a known flash code. */
 export function toFlashCode(value: string | undefined): FlashCode | null {
-  return value && value in FLASH ? (value as FlashCode) : null;
+  return value && Object.hasOwn(FLASH, value) ? (value as FlashCode) : null;
 }
 
 /** Appends `?flash=<code>` to a redirect target. */

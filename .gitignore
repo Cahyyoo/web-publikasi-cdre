@@ -27,6 +27,9 @@ Thumbs.db
 # present. Banners in /public/banners are the curated copies of these.
 /public/gambar_dokumentasi_kegiatan/
 
+# playwright
+/test-results/
+
 # typescript
 *.tsbuildinfo
 
