@@ -3,6 +3,8 @@ import SubmitButton from "@/components/ui/SubmitButton";
 import FormAlert from "@/components/ui/FormAlert";
 import SectionBadge from "@/components/ui/SectionBadge";
 import ImageFileInput from "@/components/ui/ImageFileInput";
+import TurnstileWidget from "@/components/ui/TurnstileWidget";
+import { TESTIMONIAL_MAX_LENGTH } from "@/lib/forms";
 import { PUBLIC_MAX_UPLOAD_BYTES } from "@/lib/upload-limits";
 import { submitTestimonial } from "./actions";
 
@@ -21,6 +23,8 @@ export default function TestimoniFormPage({
 }: {
   searchParams: { flash?: string };
 }) {
+  const turnstileSiteKey = process.env.TURNSTILE_SITE_KEY;
+
   return (
     <div className="mx-auto max-w-xl px-4 pb-24 pt-14 sm:px-6 lg:px-8">
       <SectionBadge>Testimoni</SectionBadge>
@@ -40,7 +44,13 @@ export default function TestimoniFormPage({
           <label htmlFor="name" className={labelClass}>
             Nama
           </label>
-          <input id="name" name="name" required className={inputClass} />
+          <input
+            id="name"
+            name="name"
+            required
+            maxLength={TESTIMONIAL_MAX_LENGTH.name}
+            className={inputClass}
+          />
         </div>
         <div>
           <label htmlFor="title" className={labelClass}>
@@ -50,6 +60,7 @@ export default function TestimoniFormPage({
             id="title"
             name="title"
             required
+            maxLength={TESTIMONIAL_MAX_LENGTH.title}
             placeholder="Kepala Desa, Ketua Kelompok UMKM, ..."
             className={inputClass}
           />
@@ -63,6 +74,7 @@ export default function TestimoniFormPage({
             name="quote"
             required
             rows={5}
+            maxLength={TESTIMONIAL_MAX_LENGTH.quote}
             placeholder="Ceritakan pengalaman Anda..."
             className={inputClass}
           />
@@ -80,6 +92,8 @@ export default function TestimoniFormPage({
             className={`${inputClass} file:mr-3 file:rounded-lg file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-brand-dark`}
           />
         </div>
+
+        {turnstileSiteKey && <TurnstileWidget siteKey={turnstileSiteKey} />}
 
         <SubmitButton
           pendingLabel="Mengirim..."

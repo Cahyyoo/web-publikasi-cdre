@@ -33,6 +33,8 @@ Portal website & CMS kustom untuk PT Stargate Pasific Resource. Dibangun dengan 
    npm run dev
    ```
 
+Untuk men-deploy ke server dengan domain publik dan Cloudflare, lihat [docs/DEPLOY.md](docs/DEPLOY.md).
+
 ## Admin CMS (`/admin`)
 
 Panel admin untuk mengelola seluruh konten dinamis tanpa Prisma Studio: Testimoni, Kategori, Artikel PPM/CSR (Post), Kelompok Binaan, Produk, Galeri Penghargaan, Galeri Kegiatan (kategori + foto carousel), dan Gambar Hero/Banner situs publik.
@@ -40,7 +42,7 @@ Panel admin untuk mengelola seluruh konten dinamis tanpa Prisma Studio: Testimon
 - Login di `/admin/login` memakai `ADMIN_USERNAME`/`ADMIN_PASSWORD` dari `.env` (satu akun bersama, tidak ada tabel user).
 - Autentikasi berbasis cookie HttpOnly yang ditandatangani (HMAC, Web Crypto API) — lihat `lib/session.ts` dan `middleware.ts`. Middleware melindungi semua route `/admin/**` kecuali `/admin/login`.
 - Setiap resource punya pola CRUD yang sama: `list (page.tsx)` → `new/page.tsx` → `[id]/page.tsx` (edit), dengan Server Actions di `actions.ts` pada masing-masing folder (`app/admin/(dashboard)/<resource>/`).
-- Field gambar (`imageUrl`, `photoUrl`, `thumbnailUrl`) berupa upload file langsung (JPG/PNG/WEBP/GIF, maks. 5MB) lewat `lib/upload.ts` — tersimpan di `public/uploads/<subfolder>/` (di-gitignore, data runtime) dan belum memakai storage eksternal (S3/Cloudinary/dll).
+- Field gambar (`imageUrl`, `photoUrl`, `thumbnailUrl`) berupa upload file langsung (JPG/PNG/WEBP/GIF/HEIC, maks. 60MB di admin dan 10MB di form publik, lihat `lib/upload-limits.ts`) lewat `lib/upload.ts` — dikonversi ke WebP dan tersimpan di `public/uploads/<subfolder>/` (di-gitignore, data runtime) dan belum memakai storage eksternal (S3/Cloudinary/dll).
 - Kategori dan Kelompok Binaan tidak bisa dihapus selama masih dipakai Artikel/Produk (dicegah lewat penanganan error foreign key `P2003`, bukan `onDelete: Cascade`).
 - Testimoni yang masuk lewat form publik `/testimoni` otomatis tersimpan dengan `isPublished = false` dan harus disetujui manual di `/admin/testimonials` sebelum tampil di Beranda.
 - `/admin/hero-images` mengelola 7 gambar hero/banner tetap di situs publik (hero Beranda, gambar Sambutan, dan banner judul `ppm`/`csr`/`binaan`/`penghargaan`/`galeri-kegiatan`) — slot-nya sudah tetap (dibuat lewat migrasi), admin hanya mengganti gambarnya; tiap form upload menampilkan rekomendasi dimensi per slot.
@@ -76,7 +78,7 @@ Panel admin untuk mengelola seluruh konten dinamis tanpa Prisma Studio: Testimon
 
 - Hampir seluruh halaman (publik & admin) memakai `export const dynamic = "force-dynamic"` (di `app/layout.tsx`) karena datanya diambil langsung dari database di setiap request. Ini bisa disesuaikan per-route (mis. `revalidate`) setelah kebutuhan caching lebih jelas.
 - Logo (`public/logo.png`) adalah aset asli perusahaan — kalau diganti, sesuaikan juga `width`/`height` pada `<Image>` di `components/layout/Navbar.tsx` dengan dimensi file barunya.
-- `next.config.mjs` mengizinkan semua hostname `https` untuk `next/image` guna mempermudah development; batasi ke domain CDN/storage yang sebenarnya sebelum production.
+- `next.config.mjs` hanya mengizinkan hostname remote `picsum.photos` untuk `next/image`, karena dipakai data contoh di database; tambahkan hostname spesifik kalau konten pindah ke CDN/storage lain.
 - Warna utama situs (`brand.*`) didefinisikan sekali di `tailwind.config.ts` dan dipakai konsisten lewat kelas seperti `bg-brand`/`text-brand` — ubah di satu tempat untuk rebranding.
 - File yang diunggah lewat admin/form publik disimpan di `public/uploads/` di server lokal — kalau deploy ke platform dengan filesystem ephemeral (mis. Vercel), file ini akan hilang saat redeploy; pertimbangkan storage eksternal untuk produksi.
 - Cookie sesi admin (`admin_session`) memakai atribut `Secure` secara default saat `NODE_ENV=production` (termasuk `npm run start`). Kalau CMS diakses lewat HTTP biasa dari komputer lain di LAN (mis. `http://192.168.x.x:3010`, tanpa reverse proxy/TLS), browser di komputer itu akan diam-diam menolak menyimpan cookie tersebut — login tampak berhasil tapi klik menu apa pun langsung terlempar balik ke halaman login. Set `COOKIE_SECURE=false` di `.env` untuk deployment seperti ini.

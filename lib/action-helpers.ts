@@ -1,6 +1,8 @@
 import { Prisma } from "@prisma/client";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { type FlashCode, withFlash } from "@/lib/flash";
+import { isValidSessionToken, SESSION_COOKIE } from "@/lib/session";
 import { UploadError } from "@/lib/upload";
 
 /** Maps a thrown error to the flash code the admin should see. */
@@ -37,11 +39,18 @@ type RunActionOptions = {
  * NEXT_REDIRECT, which the catch below would swallow and turn into a
  * "save-failed" banner. Both redirects here sit outside the try for that
  * reason.
+ *
+ * Every admin action goes through here, so the session is checked here too:
+ * middleware only guards URLs, and this guards the action itself.
  */
 export async function runAction(
   opts: RunActionOptions,
   work: () => Promise<void>
 ): Promise<never> {
+  if (!(await isValidSessionToken(cookies().get(SESSION_COOKIE)?.value))) {
+    redirect("/admin/login");
+  }
+
   let failure: FlashCode | null = null;
 
   try {

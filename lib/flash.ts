@@ -67,6 +67,18 @@ export const FLASH = {
   "upload-required": { tone: "error", text: "Foto wajib diunggah." },
   "save-failed": { tone: "error", text: "Gagal menyimpan. Silakan coba lagi." },
   "login-failed": { tone: "error", text: "Username atau password salah." },
+  "rate-limited": {
+    tone: "error",
+    text: "Terlalu banyak percobaan. Silakan coba lagi beberapa saat lagi.",
+  },
+  "turnstile-failed": {
+    tone: "error",
+    text: "Verifikasi keamanan gagal. Silakan selesaikan verifikasi dan kirim ulang.",
+  },
+  "testimoni-terlalu-panjang": {
+    tone: "error",
+    text: "Nama, jabatan/instansi, atau isi testimoni terlalu panjang.",
+  },
   "testimoni-terkirim": {
     tone: "success",
     text: "Terima kasih! Testimoni Anda sudah kami terima dan akan tayang setelah disetujui oleh tim kami.",

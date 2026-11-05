@@ -6,6 +6,9 @@
  * /admin/categories/abc into NaN and an opaque Prisma error instead of a 404.
  */
 
+/** Public testimonial form limits, shared by the inputs and the server action. */
+export const TESTIMONIAL_MAX_LENGTH = { name: 100, title: 150, quote: 2000 };
+
 /** Reads a trimmed string field. Missing or non-string values become "". */
 export function readString(formData: FormData, key: string): string {
   const value = formData.get(key);

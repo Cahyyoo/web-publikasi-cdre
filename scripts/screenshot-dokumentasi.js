@@ -1,5 +1,5 @@
 /**
- * Regenerates public/dokumentasi/ — a full-page screenshot of every route.
+ * Regenerates docs/dokumentasi/ — a full-page screenshot of every route.
  *
  * Needs a one-off dev dependency and a running production server:
  *
@@ -13,7 +13,7 @@
  *
  * Afterwards, shrink the PNGs losslessly (about 67% smaller):
  *
- *   node -e "const s=require('sharp'),f=require('fs'),p=require('path'),d='public/dokumentasi';(async()=>{for(const n of f.readdirSync(d).filter(x=>x.endsWith('.png'))){const t=p.join(d,n);const b=await s(t).png({compressionLevel:9,effort:10}).toBuffer();if(b.length<f.statSync(t).size)f.writeFileSync(t,b)}})()"
+ *   node -e "const s=require('sharp'),f=require('fs'),p=require('path'),d='docs/dokumentasi';(async()=>{for(const n of f.readdirSync(d).filter(x=>x.endsWith('.png'))){const t=p.join(d,n);const b=await s(t).png({compressionLevel:9,effort:10}).toBuffer();if(b.length<f.statSync(t).size)f.writeFileSync(t,b)}})()"
  */
 const fs = require("fs");
 const path = require("path");
@@ -22,7 +22,7 @@ const puppeteer = require("puppeteer-core");
 
 const PROJECT = path.resolve(__dirname, "..");
 const BASE = process.env.BASE_URL || "http://localhost:3010";
-const OUT = path.join(PROJECT, "public", "dokumentasi");
+const OUT = path.join(PROJECT, "docs", "dokumentasi");
 const CHROME =
   process.env.CHROME_PATH ||
   "C:/Program Files/Google/Chrome/Application/chrome.exe";
