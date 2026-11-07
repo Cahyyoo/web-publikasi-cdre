@@ -1,10 +1,10 @@
 # Panduan Deploy: Windows Server, pm2, dan Cloudflare
 
-Panduan ini membuka web ke internet di `https://domain-anda.com/web-cdre`, sementara alamat internal `stargate.appinternal.com/web-cdre` lewat Caddy tetap berjalan dengan build yang sama.
+Panduan ini membuka web ke internet di `https://domain-anda.com`, sementara alamat internal `http://cdre.appinternal.com` lewat Caddy berjalan dengan build yang sama. Kedua alamat tanpa prefix `/web-cdre`.
 
 ```
 Pengunjung → Cloudflare → Tunnel (cloudflared) ┐
-                                               ├→ app di localhost:3010 → MySQL lokal
+                                               ├→ app di localhost:3020 → MySQL lokal
 Pengguna internal → Caddy ─────────────────────┘
 ```
 
@@ -12,18 +12,42 @@ Ganti `domain-anda.com` dengan domain Anda di semua langkah. Jalankan perintah d
 
 ## 1. Cek sebelum mulai
 
-Panduan ini bergantung pada tiga hal. Pastikan dulu, karena kalau salah, langkah berikutnya berubah.
+Panduan ini bergantung pada beberapa hal. Pastikan dulu, karena kalau salah, langkah berikutnya berubah.
 
-- [ ] **Caddy satu mesin dengan app, dan upstream-nya ditulis `localhost:3010`.** App di panduan ini hanya mendengarkan di `localhost`, yang di Windows berarti `::1`, jadi Caddy dengan upstream `127.0.0.1:3010` tidak akan tersambung. Kalau Caddy beda mesin, hilangkan opsi `-H localhost` di langkah 4, lalu izinkan port 3010 hanya dari IP Caddy.
-- [ ] **`stargate.appinternal.com` tidak bisa diakses dari internet.** Coba buka dari jaringan luar, misalnya data seluler. Kalau bisa terbuka, jalur itu melewati semua perlindungan Cloudflare, jadi tutup dulu.
+- [ ] **Caddy satu mesin dengan app, dan upstream-nya ditulis `localhost:3020`.** App di panduan ini hanya mendengarkan di `localhost`, yang di Windows berarti `::1`, jadi Caddy dengan upstream `127.0.0.1:3020` tidak akan tersambung. Kalau Caddy beda mesin, hilangkan opsi `-H localhost` di langkah 4, lalu izinkan port 3020 hanya dari IP Caddy. Port 3010 sudah dipakai app `atara`, jangan dipakai.
+- [ ] **`cdre.appinternal.com` sudah ada di DNS internal** dan mengarah ke mesin Caddy. Hasil build tidak memakai prefix, jadi app butuh host sendiri dan tidak bisa lagi menumpang di `stargate.appinternal.com/web-cdre`.
+- [ ] **Alamat Caddy tidak bisa diakses dari internet.** Blok Caddy yang sama juga melayani `starsjournal.id` dan `192.168.100.205`. Coba buka dari jaringan luar, misalnya data seluler. Kalau bisa terbuka, jalur itu melewati semua perlindungan Cloudflare, jadi tutup dulu.
 - [ ] **Tunnel, Access, dan Turnstile masih gratis.** Cek di [halaman harga Cloudflare](https://www.cloudflare.com/plans/) sebelum membeli domain.
+
+### Caddyfile
+
+Tambahkan site block baru untuk app ini. Lalu ganti baris `reverse_proxy /web-cdre* localhost:3020` di blok lama dengan redirect, supaya link dan bookmark lama tetap jalan:
+
+```
+http://stargate.appinternal.com, http://starsjournal.id, http://localhost, http://192.168.100.205 {
+    reverse_proxy /pica-dashboard* localhost:3000
+    reverse_proxy /atara* localhost:3010
+
+    # Link lama /web-cdre/... dialihkan ke host baru, tanpa prefix.
+    redir /web-cdre http://cdre.appinternal.com/ 301
+    handle_path /web-cdre/* {
+        redir http://cdre.appinternal.com{uri} 301
+    }
+}
+
+http://cdre.appinternal.com {
+    reverse_proxy localhost:3020
+}
+```
+
+`handle_path` membuang `/web-cdre` dari path sebelum `{uri}` dibaca. Setelah reload Caddy, uji dengan `curl.exe -I http://stargate.appinternal.com/web-cdre/csr`. Hasilnya harus `Location: http://cdre.appinternal.com/csr`.
 
 ## 2. Siapkan server
 
 Blokir akses langsung dari luar ke port app dan database:
 
 ```powershell
-New-NetFirewallRule -DisplayName "Blokir masuk app CDRE" -Direction Inbound -Protocol TCP -LocalPort 3010 -Action Block
+New-NetFirewallRule -DisplayName "Blokir masuk app CDRE" -Direction Inbound -Protocol TCP -LocalPort 3020 -Action Block
 New-NetFirewallRule -DisplayName "Blokir masuk MySQL" -Direction Inbound -Protocol TCP -LocalPort 3306 -Action Block
 ```
 
@@ -62,8 +86,9 @@ Buat `SESSION_SECRET` dengan perintah berikut:
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-- Biarkan `BASE_PATH` dan `COOKIE_SECURE` kosong. Default-nya sudah `/web-cdre` dan cookie `Secure`.
-- Kalau `COOKIE_SECURE=false` pernah diset di server ini, hapus. Akibatnya, admin yang diakses lewat HTTP biasa akan gagal login, jadi pastikan akses internal memakai HTTPS di Caddy.
+- Biarkan `BASE_PATH` dan `COOKIE_SECURE` kosong. Default-nya, app berjalan tanpa prefix dan cookie memakai atribut `Secure`.
+- Kalau `BASE_PATH="/web-cdre"` atau `COOKIE_SECURE=false` pernah diset di server ini, hapus.
+- **Login admin hanya bisa lewat HTTPS.** Caddy di server ini melayani HTTP biasa, jadi login admin di `http://cdre.appinternal.com/admin` akan langsung kembali ke halaman login. Login admin lewat `https://domain-anda.com/admin`. Kalau admin internal harus lewat Caddy, ganti site block menjadi `cdre.appinternal.com { tls internal ... }`, lalu pasang root CA Caddy di komputer admin.
 - Batasi izin file `.env` hanya untuk akun yang menjalankan pm2 dan Administrator.
 - Tanpa `TURNSTILE_SECRET_KEY`, form testimoni menolak semua kiriman.
 
@@ -74,13 +99,13 @@ npm ci
 npx prisma migrate deploy
 npm run build
 npm install -g pm2
-pm2 start node_modules/next/dist/bin/next --name web-cdre -- start -p 3010 -H localhost
+pm2 start node_modules/next/dist/bin/next --name web-cdre -- start -p 3020 -H localhost
 pm2 save
 ```
 
 - Jangan jalankan `prisma migrate dev` dan `prisma:seed` di server ini. `migrate dev` bisa mereset database, dan seed mengisi data contoh.
-- Jalankan `next` langsung seperti di atas, bukan lewat `npm start`. Menjalankan `npm` lewat pm2 bermasalah di Windows, dan `npm start` membuat app mendengarkan di semua alamat jaringan.
-- **Pakai `-H localhost`, jangan `-H 127.0.0.1`.** Dengan `127.0.0.1`, pengunjung yang belum login di `/web-cdre/admin` diarahkan ke `https://localhost:3010/...`, bukan ke domain Anda.
+- Jalankan `next` langsung seperti di atas, bukan lewat `npm start`. Menjalankan `npm` lewat pm2 bermasalah di Windows, dan `npm start` memakai port 3010 serta membuat app mendengarkan di semua alamat jaringan.
+- **Pakai `-H localhost`, jangan `-H 127.0.0.1`.** Dengan `127.0.0.1`, pengunjung yang belum login di `/admin` diarahkan ke `https://localhost:3020/...`, bukan ke domain Anda.
 - Pakai satu instance mode fork, jangan `-i` atau cluster. Pembatas percobaan login dan testimoni disimpan di memori proses, jadi tidak akan akurat kalau proses lebih dari satu.
 - Akun yang menjalankan pm2 harus punya izin tulis ke `public\uploads`.
 - Kalau ada proses pm2 lama untuk app ini, hapus dulu dengan `pm2 delete <nama>`.
@@ -94,7 +119,7 @@ pm2 install pm2-logrotate
 Pastikan app berjalan:
 
 ```powershell
-curl.exe -I http://localhost:3010/web-cdre
+curl.exe -I http://localhost:3020/
 ```
 
 Hasil yang diharapkan: `HTTP/1.1 200 OK`.
@@ -137,26 +162,26 @@ Tunnel menghubungkan server ke Cloudflare lewat koneksi keluar, jadi tidak perlu
    ```
 4. Tambahkan **Public Hostname**:
    - Domain: `domain-anda.com`
-   - Path: `web-cdre*`
-   - Service: `HTTP` → `localhost:3010`
+   - Path: kosongkan
+   - Service: `HTTP` → `localhost:3020`
    - **Jangan isi HTTP Host Header.** Kalau diisi, login dan semua form bisa gagal dengan error "Invalid Server Actions request".
 
 Tunnel sengaja diarahkan langsung ke app, bukan ke Caddy, supaya aplikasi internal lain di Caddy tidak ikut terbuka ke internet.
 
 ## 7. Atur Cloudflare
 
-Nilai path di bawah menyertakan `/web-cdre`. Nama menu di dashboard Cloudflare bisa berubah sewaktu-waktu.
+Nama menu di dashboard Cloudflare bisa berubah sewaktu-waktu.
 
 ### Turnstile (form testimoni)
 
 1. Buka **Turnstile → Add widget**.
-2. Isi hostname `domain-anda.com` dan `stargate.appinternal.com`, supaya form berfungsi di kedua alamat.
+2. Isi hostname `domain-anda.com` dan `cdre.appinternal.com`, supaya form berfungsi di kedua alamat.
 3. Salin **Site Key** dan **Secret Key** ke `.env`, lalu jalankan `pm2 restart web-cdre`.
 
 ### Access (melindungi panel admin)
 
 1. Buka **Zero Trust → Access → Applications → Add an application → Self-hosted**.
-2. Isi domain `domain-anda.com` dengan path `web-cdre/admin*`.
+2. Isi domain `domain-anda.com` dengan path `admin*`.
 3. Buat policy **Allow** berisi alamat email para admin, dengan metode login **One-time PIN**.
 
 Dengan ini, admin harus lolos verifikasi email dulu sebelum sampai ke halaman login aplikasi.
@@ -165,7 +190,7 @@ Dengan ini, admin harus lolos verifikasi email dulu sebelum sampai ke halaman lo
 
 Free tier hanya memberi satu aturan, jadi pakai untuk form yang terbuka untuk umum. Buka **Security → WAF → Rate limiting rules**:
 
-- URI Path sama dengan `/web-cdre/testimoni`
+- URI Path sama dengan `/testimoni`
 - Batas: 20 request per 10 detik per IP, tindakan **Block**
 
 Batas ini sengaja longgar, karena free tier tidak bisa menyaring metode, sehingga kunjungan halaman biasa ikut terhitung.
@@ -174,15 +199,15 @@ Batas ini sengaja longgar, karena free tier tidak bisa menyaring metode, sehingg
 
 Cloudflare tidak meng-cache `/_next/image` secara default, karena tidak berekstensi gambar. Buka **Caching → Cache Rules**:
 
-- URI Path sama dengan `/web-cdre/_next/image`
+- URI Path sama dengan `/_next/image`
 - Tindakan: **Eligible for cache**
 
-### Redirect dari root domain
+### Redirect link lama (opsional)
 
-Buka **Rules → Redirect Rules**:
+Kalau alamat `https://domain-anda.com/web-cdre/...` pernah dibagikan, buka **Rules → Redirect Rules**:
 
-- URI Path sama dengan `/`
-- Static redirect ke `https://domain-anda.com/web-cdre`, status **301**
+- URI Path cocok dengan wildcard `/web-cdre/*`
+- Dynamic redirect ke `https://domain-anda.com/${1}`, status **301**, centang **Preserve query string**
 
 ### Rocket Loader
 
@@ -231,19 +256,20 @@ Uji pemulihan setidaknya sekali ke database percobaan. Backup yang belum pernah 
 
 Jalankan dari jaringan luar, misalnya data seluler:
 
-- [ ] `https://domain-anda.com` mengarah ke `https://domain-anda.com/web-cdre`.
-- [ ] `https://domain-anda.com/web-cdre/admin` meminta verifikasi email Cloudflare Access.
+- [ ] `https://domain-anda.com` membuka beranda tanpa prefix.
+- [ ] `https://domain-anda.com/admin` meminta verifikasi email Cloudflare Access.
 - [ ] Setelah verifikasi, login admin berhasil, dan upload foto di admin berhasil.
-- [ ] Tanpa sesi admin, `/web-cdre/admin` diarahkan ke `https://domain-anda.com/web-cdre/admin/login`, bukan ke `localhost`.
+- [ ] Tanpa sesi admin, `/admin` diarahkan ke `https://domain-anda.com/admin/login`, bukan ke `localhost`.
 - [ ] Form testimoni menampilkan widget Turnstile, dan kiriman masuk ke `/admin/testimonials` dalam status belum tayang.
-- [ ] `http://IP-SERVER:3010` tidak merespons.
-- [ ] `https://domain-anda.com/web-cdre/dokumentasi/13-admin-dashboard.png` mengembalikan 404.
-- [ ] Muat ulang sebuah foto di `/web-cdre/uploads/...` dua kali, lalu cek header `cf-cache-status: HIT`.
+- [ ] `http://IP-SERVER:3020` tidak merespons.
+- [ ] `https://domain-anda.com/dokumentasi/13-admin-dashboard.png` mengembalikan 404.
+- [ ] Muat ulang sebuah foto di `/uploads/...` dua kali, lalu cek header `cf-cache-status: HIT`.
 - [ ] Restart server, lalu pastikan app dan tunnel kembali berjalan sendiri.
 
 Dari jaringan internal:
 
-- [ ] `stargate.appinternal.com/web-cdre` tetap bisa dibuka, dan login admin berhasil.
+- [ ] `http://cdre.appinternal.com` bisa dibuka, dan gambar tampil.
+- [ ] `http://stargate.appinternal.com/web-cdre/csr` dialihkan ke `http://cdre.appinternal.com/csr`.
 
 ## 10. Update rilis
 
@@ -262,9 +288,10 @@ Jangan hapus `public\uploads` saat update, karena isinya data aplikasi yang tida
 | Gejala | Penyebab yang umum | Solusi |
 |---|---|---|
 | Login atau form gagal dengan "Invalid Server Actions request" | HTTP Host Header di tunnel diubah | Kosongkan di pengaturan Public Hostname |
-| `/web-cdre/admin` diarahkan ke `localhost` | App dijalankan dengan `-H 127.0.0.1` | Jalankan dengan `-H localhost` |
-| Error 502 di alamat internal setelah pindah ke `-H localhost` | Upstream Caddy memakai `127.0.0.1:3010` | Ganti upstream Caddy ke `localhost:3010` |
-| Login berhasil, tapi langsung kembali ke halaman login | Cookie `Secure` di HTTP biasa | Akses lewat HTTPS |
+| `/admin` diarahkan ke `localhost` | App dijalankan dengan `-H 127.0.0.1` | Jalankan dengan `-H localhost` |
+| Error 502 di alamat internal setelah pindah ke `-H localhost` | Upstream Caddy memakai `127.0.0.1:3020` | Ganti upstream Caddy ke `localhost:3020` |
+| Halaman tampil tanpa CSS, atau gambar 404, di alamat internal | Build masih memakai `BASE_PATH="/web-cdre"`, atau Caddy masih memakai `reverse_proxy /web-cdre*` | Hapus `BASE_PATH` dari `.env`, build ulang, dan pakai site block `cdre.appinternal.com` |
+| Login berhasil, tapi langsung kembali ke halaman login | Cookie `Secure` di HTTP biasa | Login lewat `https://domain-anda.com/admin`, atau pakai `tls internal` di Caddy |
 | "Terlalu banyak percobaan" saat login | 5 kali gagal dalam 15 menit | Tunggu 15 menit, atau `pm2 restart web-cdre` |
 | Form testimoni selalu "Verifikasi keamanan gagal" | Kunci Turnstile salah, atau hostname belum didaftarkan | Cek `.env` dan pengaturan widget |
 | Error 502 atau 1033 dari Cloudflare | App atau `cloudflared` mati | Cek `pm2 list` dan layanan `cloudflared` |

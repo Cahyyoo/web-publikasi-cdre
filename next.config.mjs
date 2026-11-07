@@ -1,6 +1,7 @@
-// Served behind a shared host at stargate.appinternal.com/web-cdre, whose
-// proxy forwards the prefix as-is. Set BASE_PATH="" to run at the domain root.
-const basePath = process.env.BASE_PATH ?? "/web-cdre";
+// Served at the root of its own hosts (the public domain via Cloudflare and
+// cdre.appinternal.com via Caddy). Set BASE_PATH="/web-cdre" to run under a
+// prefix on a shared host instead; it is baked in at build time.
+const basePath = process.env.BASE_PATH ?? "";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

@@ -285,6 +285,30 @@ html.reveal-ready [data-reveal="text"]:not(.is-revealed) .rt-word {
   scale: 1;
 }
 
+/*
+ * Loading placeholder behind AppImage `fill` images. A translucent white sweep
+ * over the frame's own background colour, so it suits every frame and theme.
+ */
+.img-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.35) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: img-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes img-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
