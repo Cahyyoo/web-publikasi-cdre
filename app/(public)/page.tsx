@@ -3,6 +3,7 @@ import Image from "@/components/ui/AppImage";
 import FeaturedPosts from "@/components/home/FeaturedPosts";
 import TestimonialSlider from "@/components/home/TestimonialSlider";
 import PillButton from "@/components/ui/PillButton";
+import RevealText from "@/components/ui/RevealText";
 import SectionBadge from "@/components/ui/SectionBadge";
 import SectionHeading from "@/components/ui/SectionHeading";
 import { getHeroImageUrls } from "@/lib/hero-images";
@@ -55,32 +56,32 @@ export default async function HomePage() {
         <div className="absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-black/45 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/40 to-transparent" />
         <div className="hero-content relative z-10 mx-auto w-full max-w-7xl px-4 pb-24 pt-32 sm:px-6 lg:px-8">
-          {/*
-            One fade for the whole block: staggered per-word and per-element
-            delays overlapped hydration and stuttered on phones.
-          */}
           <div className="animate-fade-up">
             <SectionBadge tone="dark">PT Stargate Pasific Resource</SectionBadge>
-            <h1 className="mt-6 max-w-4xl font-serif text-4xl font-medium leading-[1.08] sm:text-6xl lg:text-[4.5rem]">
-              Operasional Berkelanjutan, Dampak Nyata bagi Masyarakat
-            </h1>
-            <p className="mt-6 max-w-xl text-base leading-relaxed text-white/80 sm:text-lg">
-              Publikasi resmi program CSR &amp; PPM, serta pemberdayaan UMKM
-              binaan kami.
-            </p>
-            <div className="mt-10 flex flex-wrap gap-3">
-              <PillButton href="/ppm" variant="light">
-                Program PPM
-              </PillButton>
-              <PillButton href="/csr" variant="ghost">
-                Publikasi CSR
-              </PillButton>
-            </div>
+          </div>
+          <RevealText
+            as="h1"
+            immediate
+            delayMs={150}
+            text="Operasional Berkelanjutan, Dampak Nyata bagi Masyarakat"
+            className="mt-6 max-w-4xl font-serif text-4xl font-medium leading-[1.08] sm:text-6xl lg:text-[4.5rem]"
+          />
+          <p className="mt-6 max-w-xl animate-fade-up text-base leading-relaxed text-white/80 [animation-delay:500ms] sm:text-lg">
+            Publikasi resmi program CSR &amp; PPM, serta pemberdayaan UMKM
+            binaan kami.
+          </p>
+          <div className="mt-10 flex animate-fade-up flex-wrap gap-3 [animation-delay:650ms]">
+            <PillButton href="/ppm" variant="light">
+              Program PPM
+            </PillButton>
+            <PillButton href="/csr" variant="ghost">
+              Publikasi CSR
+            </PillButton>
           </div>
         </div>
         <div
           aria-hidden
-          className="absolute bottom-8 left-4 z-10 hidden animate-fade-in items-center gap-3 text-xs uppercase tracking-[0.3em] text-white/70 sm:left-6 sm:flex lg:left-[max(2rem,calc((100vw-80rem)/2+2rem))]"
+          className="absolute bottom-8 left-4 z-10 hidden animate-fade-in items-center gap-3 text-xs uppercase tracking-[0.3em] text-white/70 [animation-delay:900ms] sm:left-6 sm:flex lg:left-[max(2rem,calc((100vw-80rem)/2+2rem))]"
         >
           <span className="relative block h-12 w-px overflow-hidden bg-white/20">
             <span className="scroll-cue-line absolute inset-0 bg-white" />

@@ -10,19 +10,26 @@ export default function RevealText({
   as: Tag = "h2",
   className = "",
   delayMs = 0,
+  immediate = false,
 }: {
   text: string;
   as?: "h1" | "h2" | "h3" | "p";
   className?: string;
   /** Extra delay before the first word, e.g. to follow a badge. */
   delayMs?: number;
+  /**
+   * Animate on page load rather than on scroll. ScrollReveal treats anything
+   * already on screen as revealed without animating, so above-the-fold
+   * headings (hero, page banners) need this to play at all.
+   */
+  immediate?: boolean;
 }) {
   const words = text.split(/\s+/).filter(Boolean);
   return (
     <Tag
       data-reveal="text"
       aria-label={text}
-      className={className}
+      className={`${immediate ? "is-revealed reveal-animate" : ""} ${className}`}
       style={{ "--reveal-delay": `${delayMs}ms` } as CSSProperties}
     >
       {words.map((word, i) => (

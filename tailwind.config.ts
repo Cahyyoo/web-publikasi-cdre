@@ -29,7 +29,7 @@ const config: Config = {
       // fold content uses the [data-reveal] scroll reveal in app/globals.css.
       keyframes: {
         "fade-up": {
-          from: { opacity: "0", transform: "translateY(12px)" },
+          from: { opacity: "0", transform: "translateY(24px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
         "fade-in": {
@@ -37,7 +37,7 @@ const config: Config = {
           to: { opacity: "1" },
         },
         "hero-zoom": {
-          from: { transform: "scale(1.04)" },
+          from: { transform: "scale(1.1)" },
           to: { transform: "scale(1)" },
         },
         "bounce-soft": {
@@ -46,9 +46,9 @@ const config: Config = {
         },
       },
       animation: {
-        "fade-up": "fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "fade-up": "fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both",
         "fade-in": "fade-in 0.5s ease-out both",
-        "hero-zoom": "hero-zoom 1s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "hero-zoom": "hero-zoom 1.8s cubic-bezier(0.22, 1, 0.36, 1) both",
         "bounce-soft": "bounce-soft 2s ease-in-out infinite",
       },
     },
