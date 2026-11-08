@@ -288,24 +288,31 @@ html.reveal-ready [data-reveal="text"]:not(.is-revealed) .rt-word {
 /*
  * Loading placeholder behind AppImage `fill` images. A translucent white sweep
  * over the frame's own background colour, so it suits every frame and theme.
+ * The sweep is a pseudo-element moved with `transform` so the compositor runs
+ * it: animating background-position repainted every frame on the main thread
+ * while the page was still loading.
  */
 .img-shimmer {
+  overflow: hidden;
+}
+
+.img-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   background-image: linear-gradient(
     90deg,
     transparent 0%,
     rgb(255 255 255 / 0.35) 50%,
     transparent 100%
   );
-  background-size: 200% 100%;
+  transform: translateX(-100%);
   animation: img-shimmer 1.4s ease-in-out infinite;
 }
 
 @keyframes img-shimmer {
-  from {
-    background-position: 150% 0;
-  }
   to {
-    background-position: -50% 0;
+    transform: translateX(100%);
   }
 }
 
