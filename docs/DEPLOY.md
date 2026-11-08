@@ -1,6 +1,6 @@
 # Panduan Deploy: Windows Server, pm2, dan Cloudflare
 
-Panduan ini membuka web ke internet di `https://domain-anda.com`, sementara alamat internal `http://cdre.appinternal.com` lewat Caddy berjalan dengan build yang sama. Kedua alamat tanpa prefix `/web-cdre`.
+Panduan ini membuka web ke internet di `https://domain-anda.com`, sementara alamat internal `http://cdre.stargate.appinternal.com` lewat Caddy berjalan dengan build yang sama. Kedua alamat tanpa prefix `/web-cdre`.
 
 ```
 Pengunjung → Cloudflare → Tunnel (cloudflared) ┐
@@ -15,7 +15,7 @@ Ganti `domain-anda.com` dengan domain Anda di semua langkah. Jalankan perintah d
 Panduan ini bergantung pada beberapa hal. Pastikan dulu, karena kalau salah, langkah berikutnya berubah.
 
 - [ ] **Caddy satu mesin dengan app, dan upstream-nya ditulis `localhost:3020`.** App di panduan ini hanya mendengarkan di `localhost`, yang di Windows berarti `::1`, jadi Caddy dengan upstream `127.0.0.1:3020` tidak akan tersambung. Kalau Caddy beda mesin, hilangkan opsi `-H localhost` di langkah 4, lalu izinkan port 3020 hanya dari IP Caddy. Port 3010 sudah dipakai app `atara`, jangan dipakai.
-- [ ] **`cdre.appinternal.com` sudah ada di DNS internal** dan mengarah ke mesin Caddy. Hasil build tidak memakai prefix, jadi app butuh host sendiri dan tidak bisa lagi menumpang di `stargate.appinternal.com/web-cdre`.
+- [ ] **`cdre.stargate.appinternal.com` sudah punya catatan DNS lokal di UniFi** yang mengarah ke `192.168.100.205`, di tempat yang sama dengan catatan `stargate.appinternal.com`. Hasil build tidak memakai prefix, jadi app butuh host sendiri dan tidak bisa lagi menumpang di `stargate.appinternal.com/web-cdre`. Cek dari komputer klien dengan `nslookup cdre.stargate.appinternal.com`. Hasilnya harus `192.168.100.205`. Kalau hasilnya IP publik, catatan UniFi belum ada atau belum terbaca (jalankan `ipconfig /flushdns`). `appinternal.com` terdaftar di DNS publik, jadi tanpa catatan UniFi, browser mengirim request (termasuk cookie admin) ke server di internet. Kalau domain itu bukan milik perusahaan, server tersebut milik pihak lain.
 - [ ] **Alamat Caddy tidak bisa diakses dari internet.** Blok Caddy yang sama juga melayani `starsjournal.id` dan `192.168.100.205`. Coba buka dari jaringan luar, misalnya data seluler. Kalau bisa terbuka, jalur itu melewati semua perlindungan Cloudflare, jadi tutup dulu.
 - [ ] **Tunnel, Access, dan Turnstile masih gratis.** Cek di [halaman harga Cloudflare](https://www.cloudflare.com/plans/) sebelum membeli domain.
 
@@ -29,18 +29,18 @@ http://stargate.appinternal.com, http://starsjournal.id, http://localhost, http:
     reverse_proxy /atara* localhost:3010
 
     # Link lama /web-cdre/... dialihkan ke host baru, tanpa prefix.
-    redir /web-cdre http://cdre.appinternal.com/ 301
+    redir /web-cdre http://cdre.stargate.appinternal.com/ 301
     handle_path /web-cdre/* {
-        redir http://cdre.appinternal.com{uri} 301
+        redir http://cdre.stargate.appinternal.com{uri} 301
     }
 }
 
-http://cdre.appinternal.com {
+http://cdre.stargate.appinternal.com {
     reverse_proxy localhost:3020
 }
 ```
 
-`handle_path` membuang `/web-cdre` dari path sebelum `{uri}` dibaca. Setelah reload Caddy, uji dengan `curl.exe -I http://stargate.appinternal.com/web-cdre/csr`. Hasilnya harus `Location: http://cdre.appinternal.com/csr`.
+`handle_path` membuang `/web-cdre` dari path sebelum `{uri}` dibaca. Setelah reload Caddy, uji dengan `curl.exe -I http://stargate.appinternal.com/web-cdre/csr`. Hasilnya harus `Location: http://cdre.stargate.appinternal.com/csr`.
 
 ## 2. Siapkan server
 
@@ -88,7 +88,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 - Biarkan `BASE_PATH` dan `COOKIE_SECURE` kosong. Default-nya, app berjalan tanpa prefix dan cookie memakai atribut `Secure`.
 - Kalau `BASE_PATH="/web-cdre"` atau `COOKIE_SECURE=false` pernah diset di server ini, hapus.
-- **Login admin hanya bisa lewat HTTPS.** Caddy di server ini melayani HTTP biasa, jadi login admin di `http://cdre.appinternal.com/admin` akan langsung kembali ke halaman login. Login admin lewat `https://domain-anda.com/admin`. Kalau admin internal harus lewat Caddy, ganti site block menjadi `cdre.appinternal.com { tls internal ... }`, lalu pasang root CA Caddy di komputer admin.
+- **Login admin hanya bisa lewat HTTPS.** Caddy di server ini melayani HTTP biasa, jadi login admin di `http://cdre.stargate.appinternal.com/admin` akan langsung kembali ke halaman login. Login admin lewat `https://domain-anda.com/admin`. Kalau admin internal harus lewat Caddy, ganti site block menjadi `cdre.stargate.appinternal.com { tls internal ... }`, lalu pasang root CA Caddy di komputer admin.
 - Batasi izin file `.env` hanya untuk akun yang menjalankan pm2 dan Administrator.
 - Tanpa `TURNSTILE_SECRET_KEY`, form testimoni menolak semua kiriman.
 
@@ -175,8 +175,13 @@ Nama menu di dashboard Cloudflare bisa berubah sewaktu-waktu.
 ### Turnstile (form testimoni)
 
 1. Buka **Turnstile → Add widget**.
-2. Isi hostname `domain-anda.com` dan `cdre.appinternal.com`, supaya form berfungsi di kedua alamat.
-3. Salin **Site Key** dan **Secret Key** ke `.env`, lalu jalankan `pm2 restart web-cdre`.
+2. Isi hostname `domain-anda.com` dan `cdre.stargate.appinternal.com`, supaya form berfungsi di kedua alamat.
+3. Pilih **Widget Mode: Invisible**. Pengunjung tidak melihat kotak apa pun. Cloudflare mewajibkan rujukan ke Turnstile Privacy Addendum untuk mode ini, dan form testimoni sudah menampilkan rujukannya di bawah tombol kirim.
+4. Salin **Site Key** dan **Secret Key** ke `.env`, lalu jalankan `pm2 restart web-cdre`.
+
+Kunci di `.env.example` (`1x000...`) adalah kunci uji Cloudflare. Kunci ini selalu lolos dan menampilkan tulisan "For testing only", jadi jangan dipakai di server.
+
+Paket Free cukup untuk situs ini: maksimal 20 widget per akun, 10 hostname per widget, dan jumlah verifikasi tak terbatas. Situs ini hanya memakai 1 widget dengan 2 hostname.
 
 ### Access (melindungi panel admin)
 
@@ -268,8 +273,8 @@ Jalankan dari jaringan luar, misalnya data seluler:
 
 Dari jaringan internal:
 
-- [ ] `http://cdre.appinternal.com` bisa dibuka, dan gambar tampil.
-- [ ] `http://stargate.appinternal.com/web-cdre/csr` dialihkan ke `http://cdre.appinternal.com/csr`.
+- [ ] `http://cdre.stargate.appinternal.com` bisa dibuka, dan gambar tampil.
+- [ ] `http://stargate.appinternal.com/web-cdre/csr` dialihkan ke `http://cdre.stargate.appinternal.com/csr`.
 
 ## 10. Update rilis
 
@@ -290,8 +295,10 @@ Jangan hapus `public\uploads` saat update, karena isinya data aplikasi yang tida
 | Login atau form gagal dengan "Invalid Server Actions request" | HTTP Host Header di tunnel diubah | Kosongkan di pengaturan Public Hostname |
 | `/admin` diarahkan ke `localhost` | App dijalankan dengan `-H 127.0.0.1` | Jalankan dengan `-H localhost` |
 | Error 502 di alamat internal setelah pindah ke `-H localhost` | Upstream Caddy memakai `127.0.0.1:3020` | Ganti upstream Caddy ke `localhost:3020` |
-| Halaman tampil tanpa CSS, atau gambar 404, di alamat internal | Build masih memakai `BASE_PATH="/web-cdre"`, atau Caddy masih memakai `reverse_proxy /web-cdre*` | Hapus `BASE_PATH` dari `.env`, build ulang, dan pakai site block `cdre.appinternal.com` |
+| Halaman tampil tanpa CSS, atau gambar 404, di alamat internal | Build masih memakai `BASE_PATH="/web-cdre"`, atau Caddy masih memakai `reverse_proxy /web-cdre*` | Hapus `BASE_PATH` dari `.env`, build ulang, dan pakai site block `cdre.stargate.appinternal.com` |
 | Login berhasil, tapi langsung kembali ke halaman login | Cookie `Secure` di HTTP biasa | Login lewat `https://domain-anda.com/admin`, atau pakai `tls internal` di Caddy |
 | "Terlalu banyak percobaan" saat login | 5 kali gagal dalam 15 menit | Tunggu 15 menit, atau `pm2 restart web-cdre` |
 | Form testimoni selalu "Verifikasi keamanan gagal" | Kunci Turnstile salah, atau hostname belum didaftarkan | Cek `.env` dan pengaturan widget |
+| Muncul tulisan "For testing only" di form testimoni | `.env` server masih memakai kunci uji `1x000...` | Ganti dengan kunci asli dari langkah 7, lalu `pm2 restart web-cdre` |
+| Alamat internal tidak bisa dibuka, dan `nslookup` memberi IP publik | Catatan DNS lokal di UniFi belum ada | Tambahkan `cdre.stargate.appinternal.com` → `192.168.100.205` di UniFi, lalu `ipconfig /flushdns` di komputer klien |
 | Error 502 atau 1033 dari Cloudflare | App atau `cloudflared` mati | Cek `pm2 list` dan layanan `cloudflared` |

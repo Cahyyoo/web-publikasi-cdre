@@ -101,6 +101,22 @@ export default function TestimoniFormPage({
         >
           Kirim Testimoni
         </SubmitButton>
+
+        {/* Required by Cloudflare when the widget runs in Invisible mode. */}
+        {turnstileSiteKey && (
+          <p className="text-center text-xs text-stone-500">
+            Form ini dilindungi Cloudflare Turnstile. Lihat{" "}
+            <a
+              href="https://www.cloudflare.com/turnstile-privacy-policy/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-brand"
+            >
+              Kebijakan Privasi Turnstile
+            </a>
+            .
+          </p>
+        )}
       </form>
     </div>
   );
