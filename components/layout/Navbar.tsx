@@ -75,7 +75,7 @@ export default async function Navbar() {
                     {group.label}{" "}
                     <ChevronDown size={14} className="transition-transform duration-300 group-hover:rotate-180" />
                   </button>
-                  <div className="invisible absolute left-0 top-full w-60 translate-y-2 rounded-2xl bg-cream py-2 opacity-0 shadow-xl shadow-brand-dark/10 ring-1 ring-brand/10 transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                  <div className="invisible absolute left-0 top-full z-10 w-60 translate-y-2 rounded-2xl bg-cream py-2 opacity-0 shadow-xl shadow-brand-dark/10 ring-1 ring-brand/10 transition-all duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
                     {group.items?.map((item) => (
                       <Link
                         key={item.href}
