@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import ActivityCarousel from "@/components/gallery/ActivityCarousel";
 import PageBanner from "@/components/ui/PageBanner";
 import { getHeroImageUrl } from "@/lib/hero-images";
+import { getNavData } from "@/lib/nav";
 import { prisma } from "@/lib/prisma";
+import { findBySlug } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Galeri Kegiatan",
@@ -36,7 +38,8 @@ export default async function GaleriKegiatanPage({
 }: {
   searchParams: { category?: string };
 }) {
-  const categoryId = searchParams.category ? Number(searchParams.category) : undefined;
+  const { activityCategories } = await getNavData();
+  const categoryId = findBySlug(activityCategories, searchParams.category)?.id;
   const [categories, bannerUrl] = await Promise.all([
     getActivityCategories(categoryId),
     getHeroImageUrl("GALERI_KEGIATAN_BANNER"),

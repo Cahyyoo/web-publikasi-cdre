@@ -52,6 +52,15 @@ export function slugify(input: string): string {
     .replace(/-+/g, "-");
 }
 
+/** Finds the item whose slugified name matches a URL filter like `?category=`. */
+export function findBySlug<T extends { name: string }>(
+  items: T[],
+  slug?: string
+): T | undefined {
+  if (!slug) return undefined;
+  return items.find((item) => slugify(item.name) === slug);
+}
+
 /**
  * Formats a Date for the value of an <input type="date">.
  * Uses local date parts, not `toISOString()` — the latter converts to UTC

@@ -5,8 +5,9 @@ import type { Metadata } from "next";
 import Pagination from "@/components/blog/Pagination";
 import PageBanner from "@/components/ui/PageBanner";
 import { getHeroImageUrl } from "@/lib/hero-images";
+import { getNavData } from "@/lib/nav";
 import { prisma } from "@/lib/prisma";
-import { buildWhatsAppLink, revealProps } from "@/lib/utils";
+import { buildWhatsAppLink, findBySlug, revealProps, slugify } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Binaan UMKM",
@@ -16,20 +17,13 @@ export const metadata: Metadata = {
 
 const PAGE_SIZE = 12;
 
-async function getBinaanGroups() {
-  return prisma.binaanGroup.findMany({
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
-  });
-}
-
 async function getProducts(page: number, groupId?: number) {
   const where = groupId ? { groupId } : undefined;
   const [products, totalCount] = await Promise.all([
     prisma.product.findMany({
       where,
       // `include: { group: true }` re-fetched the same group rows that
-      // getBinaanGroups() already loads below; the name is mapped from there.
+      // getNavData() already loads below; the name is mapped from there.
       select: {
         id: true,
         name: true,
@@ -57,10 +51,10 @@ export default async function BinaanPage({
 }: {
   searchParams: { group?: string; page?: string };
 }) {
-  const groupId = searchParams.group ? Number(searchParams.group) : undefined;
+  const { binaanGroups: groups } = await getNavData();
+  const groupId = findBySlug(groups, searchParams.group)?.id;
   const page = Number(searchParams.page ?? 1) || 1;
-  const [groups, { products, totalPages }, bannerUrl] = await Promise.all([
-    getBinaanGroups(),
+  const [{ products, totalPages }, bannerUrl] = await Promise.all([
     getProducts(page, groupId),
     getHeroImageUrl("BINAAN_BANNER"),
   ]);
@@ -94,7 +88,7 @@ export default async function BinaanPage({
         {groups.map((group) => (
           <Link
             key={group.id}
-            href={`/binaan?group=${group.id}`}
+            href={`/binaan?group=${slugify(group.name)}`}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               groupId === group.id
                 ? "bg-brand text-white"

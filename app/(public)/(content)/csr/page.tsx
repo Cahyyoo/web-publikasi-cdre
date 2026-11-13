@@ -3,7 +3,9 @@ import PostCard from "@/components/blog/PostCard";
 import Pagination from "@/components/blog/Pagination";
 import PageBanner from "@/components/ui/PageBanner";
 import { getHeroImageUrl } from "@/lib/hero-images";
+import { getNavData } from "@/lib/nav";
 import { getPostsByType } from "@/lib/posts";
+import { findBySlug } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "CSR (Corporate Social Responsibility)",
@@ -16,9 +18,8 @@ export default async function CsrPage({
   searchParams: { page?: string; category?: string };
 }) {
   const page = Number(searchParams.page ?? 1) || 1;
-  const categoryId = searchParams.category
-    ? Number(searchParams.category)
-    : undefined;
+  const { csrCategories } = await getNavData();
+  const categoryId = findBySlug(csrCategories, searchParams.category)?.id;
 
   const [{ posts, totalPages }, bannerUrl] = await Promise.all([
     getPostsByType("CSR", page, categoryId),

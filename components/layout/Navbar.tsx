@@ -5,6 +5,7 @@ import MobileMenu, { type NavGroup } from "./MobileMenu";
 import NavbarShell from "./NavbarShell";
 import SearchBar from "./SearchBar";
 import { getNavData } from "@/lib/nav";
+import { slugify } from "@/lib/utils";
 
 export default async function Navbar() {
   const { csrCategories, ppmCategories, binaanGroups, activityCategories } = await getNavData();
@@ -15,16 +16,16 @@ export default async function Navbar() {
       label: "CSR & PPM",
       items: [
         { label: "Semua Publikasi CSR", href: "/csr" },
-        ...csrCategories.map((c) => ({ label: c.name, href: `/csr?category=${c.id}` })),
+        ...csrCategories.map((c) => ({ label: c.name, href: `/csr?category=${slugify(c.name)}` })),
         { label: "Semua Program PPM", href: "/ppm" },
-        ...ppmCategories.map((c) => ({ label: c.name, href: `/ppm?category=${c.id}` })),
+        ...ppmCategories.map((c) => ({ label: c.name, href: `/ppm?category=${slugify(c.name)}` })),
       ],
     },
     {
       label: "Binaan UMKM",
       items: [
         { label: "Semua Kelompok", href: "/binaan" },
-        ...binaanGroups.map((g) => ({ label: g.name, href: `/binaan?group=${g.id}` })),
+        ...binaanGroups.map((g) => ({ label: g.name, href: `/binaan?group=${slugify(g.name)}` })),
       ],
     },
     { label: "Penghargaan", href: "/penghargaan" },
@@ -34,7 +35,7 @@ export default async function Navbar() {
         { label: "Semua Kegiatan", href: "/galeri-kegiatan" },
         ...activityCategories.map((c) => ({
           label: c.name,
-          href: `/galeri-kegiatan?category=${c.id}`,
+          href: `/galeri-kegiatan?category=${slugify(c.name)}`,
         })),
       ],
     },

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildWhatsAppLink,
   excerpt,
+  findBySlug,
   formatDate,
   formatViews,
   slugify,
@@ -69,6 +70,21 @@ describe("slugify", () => {
     ["a - b -- c", "a-b-c"],
   ])("%j -> %s", (input, expected) => {
     expect(slugify(input)).toBe(expected);
+  });
+});
+
+describe("findBySlug", () => {
+  const categories = [
+    { id: 4, name: "Pendidikan" },
+    { id: 5, name: "Kemandirian Ekonomi" },
+  ];
+
+  it("matches the slugified name", () => {
+    expect(findBySlug(categories, "kemandirian-ekonomi")?.id).toBe(5);
+  });
+
+  it.each([["tidak-ada"], ["5"], [""], [undefined]])("returns undefined for %j", (slug) => {
+    expect(findBySlug(categories, slug)).toBeUndefined();
   });
 });
 
